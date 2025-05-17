@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournament Leaderboard</title>
+    <!-- CONFIGURATION: Edit player data here -->
+    <script>
+        // ===== CONFIGURATION: EDIT VALUES HERE =====
+        // Format: [rank, name, score, money]
+        const teamData = {
+            // Team 1: The Nomads
+            "The Nomads": [
+                [1, "Scottie Scheffler", "-5", 500000],
+                [20, "Tyrell Hatton", "-1", 100000],
+                [25, "Daniel Berger", "0", 50000],
+                [48, "Jordan Spieth", "+2", 20000]
+            ],
+            
+            // Team 2: Make America Golf Again
+            "Make America Golf Again": [
+                [2, "Rory McIlroy", "1", 40000],
+                [11, "Viktor Hovland", "-2", 200000],
+                [21, "Corey Conners", "-1", 100000],
+                ["200+", "Brooks Koepka", "Cut", 0]
+            ],
+            
+            // Team 3: Tax Me Harder Daddy
+            "Tax Me Harder Daddy": [
+                [4, "Collin Morikawa", "0", 50000],
+                [14, "Patrick Cantlay", "Cut", 0],
+                [30, "Thomas Detry", "Cut", 0],
+                [82, "Jon Rahm", "-2", 200000]
+            ],
+            
+            // Team 4: The Luddites
+            "The Luddites": [
+                [3, "Xander Schauffele", "1", 40000],
+                [15, "Bryson DeChambeau", "-3", 300000],
+                [28, "Akshay Bhatia", "Cut", 0],
+                [87, "Joaquin Niemann", "-1", 100000]
+            ],
+            
+            // Team 5: Punny Putters
+            "Punny Putters": [
+                [6, "Ludvig Aberg", "Cut", 0],
+                [13, "Tommy Fleetwood", "-2", 200000],
+                [27, "Min Woo Lee", "Cut", 0],
+                [31, "Sahith Theegala", "WD", 0]
+            ]
+        };
+        // ===== END CONFIGURATION =====
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .table-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .leaderboard-container {
+            grid-column: 1 / -1;
+            background-color: #f8f0e3;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        h2 {
+            color: #333;
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+        .leaderboard-container h2 {
+            color: #2c3e50;
+            border-bottom: 2px solid #e67e22;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .leaderboard-container table th {
+            background-color: #e67e22;
+            color: white;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .leaderboard-container tr:hover {
+            background-color: #fdf6e9;
+        }
+        .rank-1 {
+            font-weight: bold;
+            color: gold;
+        }
+        .rank-2 {
+            font-weight: bold;
+            color: silver;
+        }
+        .rank-3 {
+            font-weight: bold;
+            color: #cd7f32; /* bronze */
+        }
+        #recalculate {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #recalculate:hover {
+            background-color: #2980b9;
+        }
+        /* Config panel styles */
+        .config-panel {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        .config-panel button {
+            padding: 5px 10px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="leaderboard-container">
+        <h2>Who's Lucky</h2>
+        <table id="leaderboard">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Team</th>
+                    <th>Total Money</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Leaderboard will be dynamically populated -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="container" id="team-container">
+        <!-- Team tables will be dynamically populated -->
+    </div>
+
+    <button id="recalculate">Recalculate Leaderboard</button>
+    
+    <!-- Helper button to show instructions -->
+    <div class="config-panel">
+        <button id="show-instructions">Show Configuration Instructions</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Populate team tables from configuration
+            populateTeamTables();
+            
+            // Calculate initial leaderboard
+            calculateLeaderboard();
+            
+            // Set up event listener for recalculate button
+            document.getElementById('recalculate').addEventListener('click', function() {
+                calculateLeaderboard();
+            });
+            
+            // Set up event listener for instructions button
+            document.getElementById('show-instructions').addEventListener('click', function() {
+                alert('To update player data:\n\n1. Look for the "CONFIGURATION" section at the top of the HTML file\n2. Update the values in the teamData object\n3. Save the file and refresh the page\n\nFormat for each player: [rank, name, score, money]');
+            });
+        });
+        
+        function populateTeamTables() {
+            const container = document.getElementById('team-container');
+            container.innerHTML = ''; // Clear container
+            
+            // Loop through each team in the configuration
+            let teamIndex = 1;
+            for (const teamName in teamData) {
+                // Create team container
+                const teamContainer = document.createElement('div');
+                teamContainer.className = 'table-container';
+                teamContainer.id = 'team' + teamIndex;
+                
+                // Create team heading
+                const heading = document.createElement('h2');
+                heading.textContent = teamName;
+                teamContainer.appendChild(heading);
+                
+                // Create team table
+                const table = document.createElement('table');
+                
+                // Create table header
+                const thead = document.createElement('thead');
+                thead.innerHTML = `
+                    <tr>
+                        <th>Rank</th>
+                        <th>Name</th>
+                        <th>Score</th>
+                        <th>Money ($)</th>
+                    </tr>
+                `;
+                table.appendChild(thead);
+                
+                // Create table body
+                const tbody = document.createElement('tbody');
+                
+                // Add player rows
+                teamData[teamName].forEach(player => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${player[0]}</td>
+                        <td>${player[1]}</td>
+                        <td>${player[2]}</td>
+                        <td>${player[3]}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                table.appendChild(tbody);
+                teamContainer.appendChild(table);
+                container.appendChild(teamContainer);
+                
+                teamIndex++;
+            }
+        }
+        
+        function calculateLeaderboard() {
+            // Create array to store team data
+            const teams = [];
+            
+            // Calculate team totals from the configuration
+            for (const teamName in teamData) {
+                let totalMoney = 0;
+                
+                // Sum up money values for this team
+                teamData[teamName].forEach(player => {
+                    totalMoney += player[3];
+                });
+                
+                // Add team data to array
+                teams.push({
+                    name: teamName,
+                    money: totalMoney
+                });
+                
+                console.log(`${teamName}: $${totalMoney}`);
+            }
+            
+            // Sort teams by money (highest first)
+            teams.sort(function(a, b) {
+                return b.money - a.money;
+            });
+            
+            // Get the leaderboard table body
+            const leaderboardBody = document.querySelector('#leaderboard tbody');
+            leaderboardBody.innerHTML = '';
+            
+            // Add teams to leaderboard
+            teams.forEach(function(team, index) {
+                const row = document.createElement('tr');
+                
+                // Add ranking class for top 3
+                if (index < 3) {
+                    row.classList.add(`rank-${index + 1}`);
+                }
+                
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${team.name}</td>
+                    <td>$${team.money.toLocaleString()}</td>
+                `;
+                
+                leaderboardBody.appendChild(row);
+            });
+        }
+    </script>
+</body>
+</html>
